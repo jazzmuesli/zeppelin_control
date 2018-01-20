@@ -22,6 +22,7 @@ class ZeppelinEnv(gym.Env):
         self.action_space = spaces.Discrete(5)
         #TODO: provide externally
         x = numpy.loadtxt(open("first_wind_prediction.txt", "rb"), delimiter=",")
+        x = x.T
         self.width = x.shape[0]
         self.height = x.shape[1]
         #TODO: provide externally
@@ -39,17 +40,16 @@ class ZeppelinEnv(gym.Env):
         #np.random.random_integers(0,25,(self.width,self.height))
         self.goal = end_pos
         self.state = self.start_pos
-        self.visited = []
+        self.visited = set([])
         self.crash_wind_speed = 15
 
 
     def _render(self,mode,close):
-        plt.imshow(self.grid.T, interpolation='none', cmap='hot')
-        plt.plot(self.start_pos[0], self.start_pos[1], 'ro')
-        plt.plot(self.goal[0], self.goal[1], 'ro')
+        plt.imshow(self.grid, interpolation='none', cmap='hot')
+        plt.plot(self.start_pos[0], self.start_pos[1], 'go')
         for item in self.visited:
             plt.plot(item[0], item[1], 'bo')
-
+        plt.plot(self.goal[0], self.goal[1], 'ro')
         plt.show()
 
     def _step(self, action):
@@ -72,14 +72,14 @@ class ZeppelinEnv(gym.Env):
             wind_speed = self.grid[next_state[0],next_state[1]]
             if wind_speed < self.crash_wind_speed:
                 self.state = next_state
-                self.visited.append(self.state)
+                self.visited.add(self.state)
         distance = manhattan_distance(self.state, self.goal)
         reward = distance * int(wind_speed<self.crash_wind_speed)
         #print("distance: " + str(distance) + ", speed: " + str(wind_speed))
         done = self.state == self.goal
         return self.state, reward, done, {}
     def _reset(self):
-        self.visited = []
+        self.visited = set([])
         self.state = self.start_pos
 
 register(
