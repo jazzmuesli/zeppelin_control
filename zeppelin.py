@@ -40,12 +40,15 @@ class ZeppelinEnv(gym.Env):
         self.goal = end_pos
         self.state = self.start_pos
         self.visited = []
+        self.crash_wind_speed = 15
 
 
     def _render(self,mode,close):
         plt.imshow(self.grid.T, interpolation='none', cmap='hot')
+        plt.plot(self.start_pos[0], self.start_pos[1], 'ro')
+        plt.plot(self.goal[0], self.goal[1], 'ro')
         for item in self.visited:
-            plt.plot(item[1], item[0], 'bo')
+            plt.plot(item[0], item[1], 'bo')
 
         plt.show()
 
@@ -67,12 +70,12 @@ class ZeppelinEnv(gym.Env):
         wind_speed = 90
         if within_borders:
             wind_speed = self.grid[next_state[0],next_state[1]]
-            if wind_speed < 15:
+            if wind_speed < self.crash_wind_speed:
                 self.state = next_state
         distance = manhattan_distance(self.state, self.goal)
-        reward = distance * int(wind_speed<15)
+        reward = distance * int(wind_speed<self.crash_wind_speed)
         #print("distance: " + str(distance) + ", speed: " + str(wind_speed))
-        done = False
+        done = self.state == self.goal
         self.visited.append(self.state)
         return self.state, reward, done, {}
     def _reset(self):
