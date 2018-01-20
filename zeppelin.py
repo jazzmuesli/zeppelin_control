@@ -1,6 +1,7 @@
 import gym
 import numpy as np
-import matplotlib as plt
+#import matplotlib as plt
+import matplotlib.pyplot as plt
 from gym.envs.registration import registry, register, make, spec
 from gym import spaces
 def manhattan_distance(start, end):
@@ -15,20 +16,16 @@ class ZeppelinEnv(gym.Env):
     def __init__(self):
         self.gravity = 9.8
         self.action_space = spaces.Discrete(5)
-        width = 4
-        height = 3
+        self.width = 4
+        self.height = 3
         start_pos = (0,0)
-        end_pos = (width, height)
-        self.grid = np.random.random_integers(0,25,(width,height))
+        end_pos = (self.width, self.height)
+        self.grid = np.random.random_integers(0,25,(self.width,self.height))
         self.goal = end_pos
         self.state = start_pos
     def _render(self,mode,close):
-        #self.grid[self.goal[1]][self.goal[0]] = 1
-#        plt.figure(0)
-        #plt.clf()
         plt.imshow(self.grid, interpolation='none', cmap='gray')
-#        plt.imshow(costSurfaceArray, cmap='hot', interpolation='nearest')
-        #plt.savefig(path + "maze.png")
+        plt.show()
 
     def _step(self, action):
         reward = 1
@@ -43,10 +40,14 @@ class ZeppelinEnv(gym.Env):
             next_state = (state[0]+1,state[1])
         elif action == 4:# down
             next_state = (state[0],state[1]-1)
-        wind_speed = self.grid[next_state[0],next_state[1]]
-        if next_state[0] >= 0 and next_state[1] >= 0 and wind_speed < 15:
-            self.state = next_state
-        distance = manhattan_distance(state, self.goal)
+
+        within_borders = next_state[0] >= 0 and next_state[1] >= 0  and next_state[0] <= self.width and next_state[1] <= self.height
+        wind_speed = 90
+        if within_borders:
+            wind_speed = self.grid[next_state[0],next_state[1]]
+            if wind_speed < 15:
+                self.state = next_state
+        distance = manhattan_distance(self.state, self.goal)
         reward = distance * int(wind_speed<15)
         print("distance: " + str(distance) + ", speed: " + str(wind_speed))
         done = False
@@ -54,8 +55,16 @@ class ZeppelinEnv(gym.Env):
     def _reset(self):
         print("do nothing")
 
+register(
+    id='zeppelin-v2',
+    entry_point=__name__ +':ZeppelinEnv',
+    max_episode_steps=200,
+    reward_threshold=25.0,
+)
 
-if __name__ == 'main':
+print(__name__)
+if __name__ == '__main__':
+
   env = gym.make('zeppelin-v2')
   observation = env.reset()
   for i in range(10):
