@@ -72,11 +72,11 @@ class ZeppelinEnv(gym.Env):
             wind_speed = self.grid[next_state[0],next_state[1]]
             if wind_speed < self.crash_wind_speed:
                 self.state = next_state
+                self.visited.append(self.state)
         distance = manhattan_distance(self.state, self.goal)
         reward = distance * int(wind_speed<self.crash_wind_speed)
         #print("distance: " + str(distance) + ", speed: " + str(wind_speed))
         done = self.state == self.goal
-        self.visited.append(self.state)
         return self.state, reward, done, {}
     def _reset(self):
         self.visited = []
