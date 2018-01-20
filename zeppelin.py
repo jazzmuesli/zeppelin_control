@@ -1,30 +1,52 @@
+import numpy
 import gym
 import numpy as np
 #import matplotlib as plt
 import matplotlib.pyplot as plt
 from gym.envs.registration import registry, register, make, spec
 from gym import spaces
+import pandas as pd
+
+# vertical+horizontal distance
 def manhattan_distance(start, end):
     sx, sy = start
     ex, ey = end
     return abs(ex - sx) + abs(ey - sy)
+
+
 class ZeppelinEnv(gym.Env):
     metadata = {
-        'render.modes': ['human', 'rgb_array'],
-        'video.frames_per_second' : 50
+        'render.modes': ['human']
     }
     def __init__(self):
-        self.gravity = 9.8
         self.action_space = spaces.Discrete(5)
-        self.width = 4
-        self.height = 3
-        start_pos = (0,0)
-        end_pos = (self.width, self.height)
-        self.grid = np.random.random_integers(0,25,(self.width,self.height))
+        #TODO: provide externally
+        x = numpy.loadtxt(open("first_wind_prediction.txt", "rb"), delimiter=",")
+        self.width = x.shape[0]
+        self.height = x.shape[1]
+        #TODO: provide externally
+        citydata = pd.read_csv('CityData.csv')
+        index = 1
+        start_x = citydata['xid'][0]
+        start_y = citydata['yid'][0]
+        end_x = citydata['xid'][index]
+        end_y = citydata['yid'][index]
+
+        self.start_pos = (start_x, start_y)
+        #(0,0)
+        end_pos = (end_x,end_y)#(self.width, self.height)
+        self.grid = x
+        #np.random.random_integers(0,25,(self.width,self.height))
         self.goal = end_pos
-        self.state = start_pos
+        self.state = self.start_pos
+        self.visited = []
+
+
     def _render(self,mode,close):
-        plt.imshow(self.grid, interpolation='none', cmap='gray')
+        plt.imshow(self.grid.T, interpolation='none', cmap='hot')
+        for item in self.visited:
+            plt.plot(item[1], item[0], 'bo')
+
         plt.show()
 
     def _step(self, action):
@@ -41,7 +63,7 @@ class ZeppelinEnv(gym.Env):
         elif action == 4:# down
             next_state = (state[0],state[1]-1)
 
-        within_borders = next_state[0] >= 0 and next_state[1] >= 0  and next_state[0] <= self.width and next_state[1] <= self.height
+        within_borders = next_state[0] >= 0 and next_state[1] >= 0  and next_state[0] < self.width and next_state[1] < self.height
         wind_speed = 90
         if within_borders:
             wind_speed = self.grid[next_state[0],next_state[1]]
@@ -49,11 +71,13 @@ class ZeppelinEnv(gym.Env):
                 self.state = next_state
         distance = manhattan_distance(self.state, self.goal)
         reward = distance * int(wind_speed<15)
-        print("distance: " + str(distance) + ", speed: " + str(wind_speed))
+        #print("distance: " + str(distance) + ", speed: " + str(wind_speed))
         done = False
+        self.visited.append(self.state)
         return self.state, reward, done, {}
     def _reset(self):
-        print("do nothing")
+        self.visited = []
+        self.state = self.start_pos
 
 register(
     id='zeppelin-v2',
